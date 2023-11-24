@@ -1,0 +1,32 @@
+syntax = "proto3";
+
+option go_package = "mysql-meilisearch/internal/conf;conf";
+
+import "google/protobuf/duration.proto";
+
+message Bootstrap {
+  Mysql mysql = 1;
+  Meilisearch meilisearch = 2;
+  repeated Sync sync = 3;
+}
+
+message Mysql {
+  string host = 1;
+  int32 port = 2;
+  string user = 3;
+  string passwd = 4;
+  string binlogCheckpointDir = 5;
+}
+
+message Meilisearch {
+  string host = 1;
+  string apikey = 2;
+}
+
+message Sync {
+  string db = 1;
+  string table = 2;
+  string index = 3;
+  string primaryKey = 4;
+  repeated string filterAbleField = 5;
+}

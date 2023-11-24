@@ -25,6 +25,23 @@ func NewClient(host, apiKey string, logger *zap.Logger) *Client {
 	}
 }
 
+func (client *Client) CreateIndex(indexUid, primaryKey string) error {
+	//_, err := client.client.GetIndex(indexUid)
+	//if err != nil {
+	//	return err
+	//}
+	
+	_, err := client.client.CreateIndex(&meilisearch.IndexConfig{
+		Uid:        indexUid,
+		PrimaryKey: primaryKey,
+	})
+	return err
+}
+
+func (client *Client) GetIndex(indexUid string) (*meilisearch.Index, error) {
+	return client.client.GetIndex(indexUid)
+}
+
 func (client *Client) UpdateAttributes(indexName string, filterAbleField ...string) error {
 	
 	index := client.client.Index(indexName)
@@ -40,8 +57,7 @@ func (client *Client) UpdateAttributes(indexName string, filterAbleField ...stri
 			zap.Int64("enqueuedAt", task.EnqueuedAt.Unix()),
 		)
 	} else {
-		client.logger.Info("更新meilisearch index属性成功",
-			zap.String("error", err.Error()),
+		client.logger.Debug("更新meilisearch index属性成功",
 			zap.String("status", string(task.Status)),
 			zap.String("indexUid", task.IndexUID),
 			zap.String("type", string(task.Type)),
@@ -54,7 +70,6 @@ func (client *Client) UpdateAttributes(indexName string, filterAbleField ...stri
 
 func (client *Client) Search(indexName string, keyWord string, page int64) {
 	index := client.client.Index(indexName)
-	
 	res, err := index.Search(keyWord, &meilisearch.SearchRequest{
 		Limit: 10,
 		Page:  page,
@@ -71,19 +86,21 @@ func (client *Client) Search(indexName string, keyWord string, page int64) {
 	}
 }
 
-func (client *Client) CreateDocs(indexName string, docs []map[string]interface{}) error {
+// docs []map[string]interface{}
+
+func (client *Client) CreateDocs(indexName string, docs interface{}, primaryKey ...string) error {
 	
 	index := client.client.Index(indexName)
 	
 	task, err := index.AddDocuments(docs)
 	if err != nil {
 		client.logger.Error("添加文档失败",
-			zap.String("error", err.Error()),
+			zap.Error(err),
 		)
 		return err
 	}
 	
-	client.logger.Error("调用添加文档成功",
+	client.logger.Debug("调用添加文档成功",
 		zap.String("status", string(task.Status)),
 		zap.String("indexUid", task.IndexUID),
 		zap.String("type", string(task.Type)),
@@ -92,4 +109,16 @@ func (client *Client) CreateDocs(indexName string, docs []map[string]interface{}
 	)
 	
 	return nil
+}
+
+func (client *Client) UpdateDocuments(indexName string, primaryKey string, document interface{}) error {
+	index := client.client.Index(indexName)
+	_, err := index.UpdateDocuments(document, primaryKey)
+	return err
+}
+
+func (client *Client) DeleteDocument(indexName, identifier string) error {
+	index := client.client.Index(indexName)
+	_, err := index.DeleteDocument(identifier)
+	return err
 }
